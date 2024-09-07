@@ -11,8 +11,14 @@ const youtubeRegex =
   /^((https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|playlist\?list=)|youtu\.be\/))([a-zA-Z0-9_-]{11})$/;
 
 const quizSchema = yup.object().shape({
-  title: yup.string().required("Title is required"),
-  description: yup.string().required("Description is required"),
+  title: yup
+    .string()
+    .required("Title is required")
+    .min(5, "Title must be at least 5 characters"),
+  description: yup
+    .string()
+    .required("Description is required")
+    .min(20, "Description must be at least 20 characters"),
   url: yup
     .string()
     .matches(youtubeRegex, "Enter a valid YouTube URL")
@@ -33,8 +39,15 @@ const quizSchema = yup.object().shape({
           .of(
             yup.object().shape({
               text: yup.string().required("Answer text is required"),
-              is_true: yup.boolean().required("Is true is required"),
+              is_true: yup.boolean().required(),
             })
+          )
+          .min(2, "Each question should have at least two answers")
+          .test(
+            "one-correct-answer",
+            "Each question must have exactly one correct answer",
+            (answers) =>
+              answers?.filter((answer) => answer.is_true).length === 1
           )
           .required("Answers are required"),
       })
@@ -86,6 +99,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
         },
       ],
     },
+    mode: "onChange",
   });
 
   const onSubmit: SubmitHandler<QuizFormData> = (data) => {
@@ -166,6 +180,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
     );
     field.onChange(updatedQuestions);
   };
+
   const generateUniqueId = () => Date.now();
 
   return (
@@ -219,6 +234,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
               {field.value.map((question: any, questionIndex: number) => (
                 <div key={questionIndex} className="mb-4 p-3 border rounded">
                   <h4>Question {questionIndex + 1}</h4>
+
                   <Form.Group
                     controlId={`question-${questionIndex}-text`}
                     className="mb-3"
@@ -232,8 +248,15 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                         updatedQuestions[questionIndex].text = e.target.value;
                         field.onChange(updatedQuestions);
                       }}
+                      isInvalid={
+                        !!errors.questions_answers?.[questionIndex]?.text
+                      }
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.questions_answers?.[questionIndex]?.text?.message}
+                    </Form.Control.Feedback>
                   </Form.Group>
+
                   <Form.Group
                     controlId={`question-${questionIndex}-feedback_true`}
                     className="mb-3"
@@ -248,8 +271,19 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                           e.target.value;
                         field.onChange(updatedQuestions);
                       }}
+                      isInvalid={
+                        !!errors.questions_answers?.[questionIndex]
+                          ?.feedback_true
+                      }
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {
+                        errors.questions_answers?.[questionIndex]?.feedback_true
+                          ?.message
+                      }
+                    </Form.Control.Feedback>
                   </Form.Group>
+
                   <Form.Group
                     controlId={`question-${questionIndex}-feedback_false`}
                     className="mb-3"
@@ -264,51 +298,101 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                           e.target.value;
                         field.onChange(updatedQuestions);
                       }}
+                      isInvalid={
+                        !!errors.questions_answers?.[questionIndex]
+                          ?.feedback_false
+                      }
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {
+                        errors.questions_answers?.[questionIndex]
+                          ?.feedback_false?.message
+                      }
+                    </Form.Control.Feedback>
                   </Form.Group>
+
                   {question.answers.map((answer: any, answerIndex: number) => (
                     <div key={answerIndex} className="mb-3 p-2 border rounded">
-                      <Form.Group
-                        controlId={`question-${questionIndex}-answer-${answerIndex}-text`}
-                        className="mb-2"
-                      >
-                        <Form.Label>Answer Text</Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={answer.text}
-                          onChange={(e) => {
-                            const updatedAnswer = {
-                              ...answer,
-                              text: e.target.value,
-                            };
-                            handleAnswerChange(
-                              questionIndex,
-                              answerIndex,
-                              field,
-                              updatedAnswer
-                            );
-                          }}
-                        />
-                      </Form.Group>
-                      <Form.Check
-                        type="checkbox"
-                        label="Correct Answer"
-                        checked={answer.is_true}
-                        onChange={(e) => {
-                          const updatedAnswer = {
-                            ...answer,
-                            is_true: e.target.checked,
-                          };
-                          handleAnswerChange(
-                            questionIndex,
-                            answerIndex,
-                            field,
-                            updatedAnswer
-                          );
-                        }}
-                      />
+                      <div className="d-flex align-items-center">
+                        <Form.Group
+                          controlId={`question-${questionIndex}-answer-${answerIndex}-text`}
+                          className="flex-grow-1 mb-0"
+                        >
+                          <Form.Label>Answer Text</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={answer.text}
+                            onChange={(e) => {
+                              const updatedAnswer = {
+                                ...answer,
+                                text: e.target.value,
+                              };
+                              handleAnswerChange(
+                                questionIndex,
+                                answerIndex,
+                                field,
+                                updatedAnswer
+                              );
+                            }}
+                            isInvalid={
+                              !!errors.questions_answers?.[questionIndex]
+                                ?.answers?.[answerIndex]?.text
+                            }
+                            style={{
+                              borderColor:
+                                initialQuiz && answer.is_true
+                                  ? "green"
+                                  : initialQuiz && !answer.is_true
+                                  ? "red"
+                                  : "",
+                              borderWidth: initialQuiz ? "2px" : "",
+                              borderStyle: initialQuiz ? "solid" : "",
+                            }}
+                          />
+                          <Form.Control.Feedback type="invalid">
+                            {
+                              errors.questions_answers?.[questionIndex]
+                                ?.answers?.[answerIndex]?.text?.message
+                            }
+                          </Form.Control.Feedback>
+                        </Form.Group>
+
+                        <Form.Group
+                          controlId={`question-${questionIndex}-answer-${answerIndex}-is_true`}
+                          className="ms-3 mb-0"
+                        >
+                          <Form.Check
+                            type="checkbox"
+                            label="Correct Answer"
+                            checked={answer.is_true}
+                            onChange={() => {
+                              const updatedAnswer = {
+                                ...answer,
+                                is_true: !answer.is_true,
+                              };
+                              handleAnswerChange(
+                                questionIndex,
+                                answerIndex,
+                                field,
+                                updatedAnswer
+                              );
+                            }}
+                          />
+                        </Form.Group>
+                      </div>
                     </div>
                   ))}
+
+                  {errors.questions_answers?.[questionIndex]?.answers
+                    ?.message && (
+                    <div className="text-danger">
+                      {
+                        errors.questions_answers?.[questionIndex]?.answers
+                          ?.message
+                      }
+                    </div>
+                  )}
+
                   <Button
                     variant="outline-primary"
                     onClick={() => {
@@ -325,6 +409,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                   </Button>
                 </div>
               ))}
+
               <Button
                 variant="outline-success"
                 onClick={() => {
@@ -334,7 +419,9 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                       text: "",
                       feedback_true: "",
                       feedback_false: "",
-                      answers: [{ text: "", is_true: false }],
+                      answers: [
+                        { id: generateUniqueId(), text: "", is_true: false },
+                      ],
                     },
                   ]);
                 }}
@@ -345,9 +432,11 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
           )}
         />
 
-<Button type="submit" variant="primary" className="mt-4">
-          {initialQuiz ? "Save Changes" : "Add Quiz"}
-        </Button>
+        <div className="text-center mt-4">
+          <Button type="submit" variant="primary">
+            {initialQuiz ? "Update Quiz" : "Create Quiz"}
+          </Button>
+        </div>
       </Form>
     </Container>
   );
