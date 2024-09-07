@@ -4,7 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useQuizContext } from "@/store/QuizContext";
 import { Quiz } from "@/types/types";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Button, Form } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const youtubeRegex =
@@ -55,6 +55,7 @@ interface QuizFormData {
     feedback_true: string;
     feedback_false: string;
     answers: {
+      id: number;
       text: string;
       is_true: boolean;
     }[];
@@ -71,7 +72,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
     control,
     formState: { errors },
   } = useForm<QuizFormData>({
-    resolver: yupResolver(quizSchema),
+    resolver: yupResolver(quizSchema as any),
     defaultValues: initialQuiz || {
       title: "",
       description: "",
@@ -91,14 +92,46 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
     const currentDate = new Date().toISOString();
     if (initialQuiz && initialQuiz.id) {
       editQuiz({
-        ...initialQuiz,
-        ...data,
+        id: initialQuiz.id,
+        title: data.title,
+        description: data.description,
+        url: data.url,
+        questions_answers: data.questions_answers.map((question, index) => ({
+          id: initialQuiz.questions_answers[index]?.id || Date.now(),
+          text: question.text,
+          feedback_true: question.feedback_true,
+          feedback_false: question.feedback_false,
+          answer_id: question.answers.find((a) => a.is_true)?.id || null,
+          answers: question.answers.map((answer, aIndex) => ({
+            id:
+              initialQuiz.questions_answers[index]?.answers[aIndex]?.id ||
+              Date.now(),
+            text: answer.text,
+            is_true: answer.is_true,
+          })),
+        })),
+        created: initialQuiz.created,
         modified: currentDate,
+        score: initialQuiz.score,
       });
     } else {
       addQuiz({
-        ...data,
         id: Date.now(),
+        title: data.title,
+        description: data.description,
+        url: data.url,
+        questions_answers: data.questions_answers.map((question) => ({
+          id: Date.now(),
+          text: question.text,
+          feedback_true: question.feedback_true,
+          feedback_false: question.feedback_false,
+          answer_id: question.answers.find((a) => a.is_true)?.id || null,
+          answers: question.answers.map((answer) => ({
+            id: Date.now(),
+            text: answer.text,
+            is_true: answer.is_true,
+          })),
+        })),
         created: currentDate,
         modified: currentDate,
       });
@@ -112,17 +145,28 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
     field: any,
     updatedAnswer: any
   ) => {
-    const updatedAnswers = field.value[questionIndex].answers.map(
-      (answer: any, index: number) =>
-        index === answerIndex ? updatedAnswer : { ...answer, is_true: false }
-    );
-    const updatedQuestions = field.value.map((question: any, index: number) =>
-      index === questionIndex
-        ? { ...question, answers: updatedAnswers }
-        : question
+    const updatedQuestions = field.value.map(
+      (question: any, qIndex: number) => {
+        if (qIndex === questionIndex) {
+          const updatedAnswers = question.answers.map(
+            (answer: any, aIndex: number) => {
+              if (aIndex === answerIndex) {
+                return updatedAnswer;
+              }
+              if (updatedAnswer.is_true && aIndex !== answerIndex) {
+                return { ...answer, is_true: false };
+              }
+              return answer;
+            }
+          );
+          return { ...question, answers: updatedAnswers };
+        }
+        return question;
+      }
     );
     field.onChange(updatedQuestions);
   };
+  const generateUniqueId = () => Date.now();
 
   return (
     <Container className="my-5">
@@ -223,43 +267,54 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
                     />
                   </Form.Group>
                   {question.answers.map((answer: any, answerIndex: number) => (
-                    <Form.Group key={answerIndex} className="mb-2">
-                      <Form.Label>Answer {answerIndex + 1}</Form.Label>
-                      <div className="d-flex align-items-center">
+                    <div key={answerIndex} className="mb-3 p-2 border rounded">
+                      <Form.Group
+                        controlId={`question-${questionIndex}-answer-${answerIndex}-text`}
+                        className="mb-2"
+                      >
+                        <Form.Label>Answer Text</Form.Label>
                         <Form.Control
                           type="text"
                           value={answer.text}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const updatedAnswer = {
+                              ...answer,
+                              text: e.target.value,
+                            };
                             handleAnswerChange(
                               questionIndex,
                               answerIndex,
                               field,
-                              { ...answer, text: e.target.value }
-                            )
-                          }
+                              updatedAnswer
+                            );
+                          }}
                         />
-                        <Form.Check
-                          type="checkbox"
-                          label="Correct Answer"
-                          checked={answer.is_true}
-                          onChange={() =>
-                            handleAnswerChange(
-                              questionIndex,
-                              answerIndex,
-                              field,
-                              { ...answer, is_true: !answer.is_true }
-                            )
-                          }
-                          className="ms-2"
-                        />
-                      </div>
-                    </Form.Group>
+                      </Form.Group>
+                      <Form.Check
+                        type="checkbox"
+                        label="Correct Answer"
+                        checked={answer.is_true}
+                        onChange={(e) => {
+                          const updatedAnswer = {
+                            ...answer,
+                            is_true: e.target.checked,
+                          };
+                          handleAnswerChange(
+                            questionIndex,
+                            answerIndex,
+                            field,
+                            updatedAnswer
+                          );
+                        }}
+                      />
+                    </div>
                   ))}
                   <Button
                     variant="outline-primary"
                     onClick={() => {
                       const updatedQuestions = [...field.value];
                       updatedQuestions[questionIndex].answers.push({
+                        id: generateUniqueId(),
                         text: "",
                         is_true: false,
                       });
@@ -290,7 +345,7 @@ const QuizForm = ({ initialQuiz }: QuizFormProps) => {
           )}
         />
 
-        <Button type="submit" variant="primary" className="mt-4">
+<Button type="submit" variant="primary" className="mt-4">
           {initialQuiz ? "Save Changes" : "Add Quiz"}
         </Button>
       </Form>
