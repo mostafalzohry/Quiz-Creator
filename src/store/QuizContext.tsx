@@ -5,6 +5,7 @@ interface QuizContextType {
   quizzes: Quiz[];
   addQuiz: (quiz: Quiz) => void;
   editQuiz: (quiz: Quiz) => void;
+  deleteQuiz: (quizId: number) => void; 
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -72,8 +73,12 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
+  const deleteQuiz = (quizId: number) => {
+    setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+  };
+
   return (
-    <QuizContext.Provider value={{ quizzes, addQuiz, editQuiz }}>
+    <QuizContext.Provider value={{ quizzes, addQuiz, editQuiz, deleteQuiz }}>
       {children}
     </QuizContext.Provider>
   );
