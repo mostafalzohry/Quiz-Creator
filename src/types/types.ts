@@ -18,7 +18,22 @@ export interface Quiz {
   title: string;
   description: string;
   url: string;
-  questions_answers: Question[];
+  questions_answers: {
+    id: number;
+
+    text: string;
+    feedback_true: string;
+    feedback_false: string;
+    answer_id: number | null;
+    answers: {
+      id: number;
+
+      text: string;
+      is_true: boolean;
+    }[];
+  }[];
   created: string;
   modified: string;
+  score?: number | null;
 }
+  
