@@ -1,9 +1,9 @@
 
 import { useRouter } from "next/router";
-import QuizForm from "@/components/QuizForm";
+import QuizForm from "../../components/QuizForm";
 import { useEffect, useState } from "react";
-import { useQuizContext } from "@/store/QuizContext";
-import { Quiz } from "@/types/types";
+import { useQuizContext } from "../../store/QuizContext";
+import { Quiz } from "../../types/types";
 
 const EditQuiz = () => {
   const router = useRouter();

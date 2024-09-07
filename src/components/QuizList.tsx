@@ -1,5 +1,5 @@
 
-import { useQuizContext } from "@/store/QuizContext";
+import { useQuizContext } from "../store/QuizContext";
 import { useRouter } from "next/router";
 import { Card, Button, Container, Row, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -7,7 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-  return date.toLocaleDateString('en-GB', options); // 'en-GB' gives the format 'dd MMM yyyy'
+  return date.toLocaleDateString('en-GB', options); 
 };
 
 

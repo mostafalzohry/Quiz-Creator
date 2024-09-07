@@ -1,5 +1,4 @@
-import { QuizProvider } from "@/store/QuizContext";
-import "@/styles/globals.css";
+import { QuizProvider } from "../store/QuizContext";
 import type { AppProps } from "next/app";
 import 'bootstrap/dist/css/bootstrap.min.css';
 

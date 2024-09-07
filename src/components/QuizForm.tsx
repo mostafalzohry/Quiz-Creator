@@ -2,8 +2,8 @@ import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { useRouter } from "next/router";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { useQuizContext } from "@/store/QuizContext";
-import { Quiz } from "@/types/types";
+import { useQuizContext } from "../store/QuizContext";
+import { Quiz } from "../types/types";
 import { Container, Button, Form } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 

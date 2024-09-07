@@ -1,4 +1,4 @@
-import QuizForm from "@/components/QuizForm";
+import QuizForm from "../components/QuizForm";
 
 const CreateQuiz = () => {
   return (
